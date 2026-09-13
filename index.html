@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en-us">
+<head>
+<meta charset="utf-8"/>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>Wall Sprint</title>
+<meta name="application-name" content="Wall Sprint"/>
+<link rel="stylesheet" href="./style.css"/>
+<style>
+  canvas:focus { outline: none; }
+  html, body {
+    padding: 0; margin: 0; overflow: hidden; overscroll-behavior: none;
+    -webkit-touch-callout: none; user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0);
+    height: 100%;
+  }
+</style>
+<script src="./game-driver.js"></script>
+</head>
+<body class="dark">
+<div id="unity-container" class="unity-desktop">
+<canvas id="unity-canvas" tabindex="-1"></canvas>
+</div>
+<div id="loading-cover" style="display:none;">
+<div id="unity-loading-bar">
+<div id="unity-progress-bar-empty" style="display: none;">
+<div id="unity-progress-bar-full"></div>
+</div>
+<div class="spinner"></div>
+</div>
+</div>
+<script>
+  const buildUrl = "Build";
+  const loaderUrl = buildUrl + "/game.loader.js";
+  const config = {
+    dataUrl: buildUrl + "/game.data",
+    frameworkUrl: buildUrl + "/game.framework.js",
+    codeUrl: buildUrl + "/game.wasm",
+    streamingAssetsUrl: "StreamingAssets",
+    companyName: " ",
+    productName: "Wall Sprint",
+    productVersion: "1.0"
+  };
+
+  const container = document.querySelector("#unity-container");
+  const canvas = document.querySelector("#unity-canvas");
+  const loadingCover = document.querySelector("#loading-cover");
+  const progressBarEmpty = document.querySelector("#unity-progress-bar-empty");
+  const progressBarFull = document.querySelector("#unity-progress-bar-full");
+  const spinner = document.querySelector('.spinner');
+
+  if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+    container.className = "unity-mobile";
+  }
+
+  loadingCover.style.display = "";
+
+  let myGameInstance = null;
+
+  document.addEventListener('contextmenu', event => event.preventDefault());
+  document.addEventListener('visibilitychange', function () {
+    if (window.myGameInstance && window.initGame === true) {
+      window.myGameInstance.SendMessage('LegacyGame', 'OnVisibilityGameWindow', document.hidden ? 'false' : 'true');
+    }
+  });
+  window.addEventListener('pointerdown', () => { if (window.focusGame) window.focusGame(); });
+  window.addEventListener('touchstart', () => { if (window.focusGame) window.focusGame(); });
+  window.addEventListener('resize', () => { if (window.focusGame) window.focusGame(); });
+
+  const script = document.createElement("script");
+  script.src = loaderUrl;
+  script.onload = () => {
+    window.StartUnityInstance = function () {
+      if (window.__wallSprintStarted) return;
+      window.__wallSprintStarted = true;
+      createUnityInstance(canvas, Object.assign(config, { autoSyncPersistentDataPath: true }), (progress) => {
+        spinner.style.display = "none";
+        progressBarEmpty.style.display = "";
+        const adjustedProgress = Math.max(progress, 0.05);
+        progressBarFull.style.width = `${100 * adjustedProgress}%`;
+      }).then((unityInstance) => {
+        myGameInstance = unityInstance;
+        window.myGameInstance = unityInstance;
+        window.ygGameInstance = unityInstance;
+        window.unityInstance = unityInstance;
+        loadingCover.style.display = "none";
+        if (window.focusGame) window.focusGame();
+      }).catch((message) => {
+        console.error(message);
+      });
+    };
+    // Offline: boot immediately, no SDK wait.
+    window.StartUnityInstance();
+  };
+  document.body.appendChild(script);
+</script>
+</body>
+</html>
